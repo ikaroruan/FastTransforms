@@ -24,7 +24,10 @@ int main(int argc, const char * argv[]) {
             sscanf(argv[2], "%d", &ITIME);
         else ITIME = 1;
     }
-    else IERR = 1;
+    else{ 
+		IERR = 1;
+		ITIME = 1;
+	}
 
     printf("\nTesting the computation of structured isometries.\n\n");
     printf("\t\t\t Test \t\t\t\t | 2-norm Relative Error\n");
