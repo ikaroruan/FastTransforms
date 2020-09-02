@@ -117,11 +117,44 @@ void X(inner_test_tdc_drop_precision)(int * checksum, int n) {
     printf("Numerical error in FMM'ed tdc ||VᵀAV - Λ|| / ||Λ|| \t |%20.2e ", (double) err);
     X(checktest)(err, n*n, checksum);
 
+	gettimeofday(&start, NULL);
+    X2(tdc_eigen) * DF2 = X2(tdc_eig)(S2);
+    gettimeofday(&end, NULL);
+    printf("Time for extended precision direct eigensolve \t\t |%20.6f s\n", elapsed(&start, &end, 1));
+
+    gettimeofday(&start, NULL);
+    X(tdc_eigen) * DF = X(drop_precision_tdc_eigen)(DF2);
+    gettimeofday(&end, NULL);
+    printf("Time to drop precision in the factorization \t\t |%20.6f s\n", elapsed(&start, &end, 1));
+    X2(destroy_tdc_eigen)(DF2);
+
+    gettimeofday(&start, NULL);
+    for (int j = 0; j < n; j++)
+        X(tdmv)('N', 1, DF, Id+j*n, 0, V+j*n);
+    for (int j = 0; j < n; j++)
+        X(stmv)('N', 1, S, V+j*n, 0, VtAV+j*n);
+    for (int i = 0; i < n*n; i++)
+        V[i] = VtAV[i];
+    for (int j = 0; j < n; j++)
+        X(tdmv)('T', 1, DF, V+j*n, 0, VtAV+j*n);
+    for (int j = 0; j < n; j++)
+        VtAV[j+j*n] -= DF->F0->lambda[j];
+    gettimeofday(&end, NULL);
+    printf("Time to execute tests \t\t\t\t\t |%20.6f s\n", elapsed(&start, &end, 1));
+
+    printf("Size of the divide-and-conquer eigendecomposition \t |");
+    print_summary_size(X(summary_size_tdc_eigen)(DF));
+
+    err = X(norm_1arg)(VtAV, n*n)/X(norm_1arg)(DF->F0->lambda, n);
+    printf("Numerical error in direct tdc ||VᵀAV - Λ|| / ||Λ|| \t |%20.2e ", (double) err);
+    X(checktest)(err, n*n, checksum);
+
     X(destroy_symmetric_tridiagonal)(T);
     X(destroy_symmetric_tridiagonal)(S);
     X2(destroy_symmetric_tridiagonal)(T2);
     X2(destroy_symmetric_tridiagonal)(S2);
     X(destroy_tdc_eigen)(F);
+    X(destroy_tdc_eigen)(DF);
     X(destroy_tdc_eigen_FMM)(HF);
     free(Id);
     free(V);

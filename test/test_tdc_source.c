@@ -112,10 +112,46 @@ void Y(test_tdc)(int * checksum) {
     printf("Numerical error in FMM'ed tdc ||VᵀAV - Λ|| / ||Λ|| \t |%20.2e ", (double) err);
     X(checktest)(err, n*n, checksum);
 
+	X(tdc_eigen) * DF = X(tdc_eig)(S);
+
+	for (int j = 0; j < n; j++)
+        X(tdmv)('N', 1, DF, Id+j*n, 0, V+j*n);
+    for (int j = 0; j < n; j++)
+        X(stmv)('N', 1, S, V+j*n, 0, VtAV+j*n);
+    for (int i = 0; i < n*n; i++)
+        V[i] = VtAV[i];
+    for (int j = 0; j < n; j++)
+        X(tdmv)('T', 1, DF, V+j*n, 0, VtAV+j*n);
+    for (int j = 0; j < n; j++)
+        VtAV[j+j*n] -= DF->F0->lambda[j];
+
+    err = X(norm_1arg)(VtAV, n*n)/X(norm_1arg)(DF->F0->lambda, n);
+    printf("Numerical error direct tdc ||VᵀAV - Λ|| / ||Λ|| \t |%20.2e ", (double) err);
+    X(checktest)(err, n*n, checksum);
+
+	X(tdc_eigen_FMM) * FF = X(tdc_eig_FMM)(S);
+
+    for (int j = 0; j < n; j++)
+        X(tfmv)('N', 1, FF, Id+j*n, 0, V+j*n);
+    for (int j = 0; j < n; j++)
+        X(stmv)('N', 1, S, V+j*n, 0, VtAV+j*n);
+    for (int i = 0; i < n*n; i++)
+        V[i] = VtAV[i];
+    for (int j = 0; j < n; j++)
+        X(tfmv)('T', 1, FF, V+j*n, 0, VtAV+j*n);
+    for (int j = 0; j < n; j++) 
+        VtAV[j+j*n] -= FF->F0->lambda[j];
+
+    err = X(norm_1arg)(VtAV, n*n)/X(norm_1arg)(FF->F0->lambda, n);
+    printf("Numerical error direct FMM'ed tdc ||VᵀAV - Λ|| / ||Λ|| \t |%20.2e ", (double) err);
+    X(checktest)(err, n*n, checksum);
+
     X(destroy_symmetric_tridiagonal)(T);
     X(destroy_symmetric_tridiagonal)(S);
     X(destroy_tdc_eigen)(F);
+    X(destroy_tdc_eigen)(DF);
     X(destroy_tdc_eigen_FMM)(HF);
+    X(destroy_tdc_eigen_FMM)(FF);
     free(V);
     free(AV);
     free(BV);
